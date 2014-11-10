@@ -7,7 +7,7 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.ServiceRegistryBuilder;
 
 public class HibernateUtil {
-
+//这是注视
 	private static SessionFactory factory = buildSessionFactory();
 	
 	private static SessionFactory buildSessionFactory() {
