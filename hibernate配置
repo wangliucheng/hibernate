@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<!-- 
+	 hibernate 是一种ORM框架,是ORM框架中一个典范    ORM叫做对象关系映射
+		是面向对象语言和关系型数据库之间的映射关系 
+		所以只有在面向对象语言或者关系型数据库没用的时候ORM才会消失 -->
+	
+	<!-- ORM为我们做什么
+	减少乏味的代码
+	更加面向对象的设计
+	更好的性能
+	更好的移植性
+	 -->
+	<!-- 使用Hibernate -->
+    <!-- http://hibernate.org/ -->
+<!-- 1. 加入Hibernate的jar包 -->
+	 
+	 <dependency>
+		<groupId>org.hibernate</groupId>
+		<artifactId>hibernate-core</artifactId>
+		<version>4.2.0.Final</version>
+	</dependency>
+	<dependency>
+		<groupId>mysql</groupId>
+		<artifactId>mysql-connector-java</artifactId>
+		<version>5.1.33</version>
+	</dependency>
+<!--2. 创建持久化类（pojo） -->
+	<!-- 就是以前的实体类 -->
+<!-- 3. 创建映射文件（xxx.hbm.xml） -->
+	<!--pojo->xxx.hbm.xml->table表示一个实体类于一张表的映射关系文件 
+		在pojo包里新建User.hbm.xml文件,和类名相同 -->
+			
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!-- 展开jar包有个hibernate-mapping-3.0.dtd,拷贝这几行dtd -->
+	<!DOCTYPE hibernate-mapping PUBLIC 
+		"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+		"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+		<!-- 根节点叫做hibernate-mapping,package表示User所在的包名
+			子节点的class,那么属性写类名,package和name组成一个完全限定名
+			所以不写package的时候name属性要写完全限定名,table写表名---->
+	<hibernate-mapping package="com.kaishengit.pojo">
+		
+		<class name="User" table="user">
+		<!-- pojo中的属性要对应表里面的列 -->
+			<!-- id这个节点是主键列,name写属性的名字,column
+				是表中列的名字,作为主键还要有生成策略
+					generator class="native"native表示自动增长-->
+			<id name="id" column="id">
+				<generator class="native"/>
+			</id>
+			<!-- 剩下普通列和属性的对应,当name和column相同的时候可以只
+			写name-->
+			<property name="username"/>
+			<property name="password" column="password"/>
+			
+		</class>
+	</hibernate-mapping>
+		
+<!-- 	4. 创建Hibernate配置文件（hibernate.cfg.xml）总配置文件
+建在根目录下....
+-->	
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!-- 打开jar包中的hibernate-configuration-3.0.dtd,复制这几行dtd -->
+	<!DOCTYPE hibernate-configuration PUBLIC
+		"-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+		"http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+	<hibernate-configuration>
+		<!-- 这个session和http中的session没有关系  -->
+		<!-- D:\JAVA\Java培训\Jar包\hibernate-release-4.1.1.Final\hibernate-release-4.1.1.Final\project\etc的hibernate.properties -->
+		<session-factory>
+			<!-- 以hibernate.开头的可以省略hibernate. -->
+			<property name="connection.driver_class">com.mysql.jdbc.Driver</property>
+			<property name="connection.url">jdbc:mysql:///hibernate</property>
+			<property name="connection.username">root</property>
+			<property name="connection.password">root</property>
+			
+			<!-- 方言(较好的移植性) -->
+			<property name="dialect">org.hibernate.dialect.MySQLDialect</property>
+			
+			<!-- c3p0数据源(以前用的dbcp) 
+				需要pom中导入这两个jar包
+				<dependency>
+					<groupId>c3p0</groupId>
+					<artifactId>c3p0</artifactId>
+					<version>0.9.1</version>
+				</dependency>
+				<dependency>
+					<groupId>org.hibernate</groupId>
+					<artifactId>hibernate-c3p0</artifactId>
+					<version>4.2.0.Final</version>
+				</dependency>-->
+			<property name="c3p0.max_size">10</property>
+			<property name="c3p0.min_size">2</property>
+			<property name="c3p0.timeout">5000</property>
+			<property name="c3p0.max_statements">100</property>
+			<property name="c3p0.idle_test_period">3000</property>
+			<property name="c3p0.acquire_increment">2</property>
+			<property name="c3p0.validate">false</property>
+			
+			<!-- 执行的时候能看到sql语言 -->
+			<property name="show_sql">true</property>
+			<!-- 把session放到当前线程里 比如放在main方法中就是放在主线程里,使用的
+			时候就可以获得session.-->
+			<property name="current_session_context_class">thread</property>
+			<!-- 表明映射文件的位置 -->
+			<mapping resource="com/kaishengit/pojo/User.hbm.xml"/>
+			
+				
+		</session-factory>
+			
+	</hibernate-configuration>
+
+
+
+<!-- 5. 运行
+Hibernate对pojo的要求：
+? 属性要有对应的get和set方法
+? 要有无参数的默认构造方法
+? 不要使用final进行修饰 -->
+		
+	
+	<!--.configure()才会去读取hibernate,cfg.xml  -->
+	Configuration cfg = new Configuration().configure();
+	ServiceRegistry serviceRegistry= new ServiceRegistryBuilder().applySettings(cfg.getProperties()).buildServiceRegistry();
+	SessionFactory sessionFactory = cfg.buildSessionFactory(serviceRegistry);
+	<!-- 最终是为了创建sessionfactory,这是4.0  3.0的hibernate只需要
+		Configuration cfg = new Configuration().configure();
+	SessionFactory sessionFactory = cfg.buildSessionFactory();-->
+	Session session = sessionFactory.getCurrentSession();
+	
+	
+	<!-- 增删改查都在事务中完成 session.beginTransaction();
+	session.getTransaction().commit();或者
+	session.getTransaction().rollback();-->
+	session.beginTransaction();
+	
+	User user = new User();
+	user.setUsername("jack");
+	user.setPassword("123");
+	
+	session.save(user);
+	
+	session.getTransaction().commit();
+<!-- 或者Transaction tran = session.beginTransaction();
+	tran.commit();-->
+	
+	
+	
+	
+	
+	
+	<!-- 应该只有一个sessionfactory而且读取配置文件
+Configuration cfg = new Configuration().configure();应该也只读一次
+所以写成单例模式	-->
+	
+	public class HibernateUtil {
+	<!-- 静态只读一次 -->
+	private static SessionFactory factory = buildSessionFactory();
+
+	private static SessionFactory buildSessionFactory() {
+		Configuration cfg = new Configuration().configure();
+		ServiceRegistry serviceRegistry= new ServiceRegistryBuilder().applySettings(cfg.getProperties()).buildServiceRegistry();
+		return cfg.buildSessionFactory(serviceRegistry);
+	}
+	<!-- 提供获取sessionfactory方法 -->
+	public static SessionFactory getSessionFactory() {
+		return factory;
+	}
+	<!-- 提供获取session的方法 -->
+	public static Session getSession() {
+		return getSessionFactory().getCurrentSession();
+	}
+	
+	
+}
+
+
+
+
+
+
+<!-- test中 -->	
+public class Test {
+
+	public static void main(String[] args) {
+<!-- 添加 -->
+		User user = new User();
+		user.setUsername("tom");
+		user.setPassword("000000");
+		
+		Session session = HibernateUtil.getSession();
+		session.beginTransaction();
+		<!-- 保存要放在事务中 -->
+		session.save(user);
+		session.getTransaction().commit();
+		
+		
+		
+		
+<!-- 查询 -->
+		Session session = HibernateUtil.getSession();
+		session.beginTransaction();
+		<!-- 要放在事务中 ,根据主键查询-->
+		User user = (User) session.get(User.class, 1);
+		System.out.println(user.getUsername());
+		session.getTransaction().commit();
+		
+<!-- 删除 -->
+
+		Session session = HibernateUtil.getSession();
+		session.beginTransaction();
+		<!-- 要放在事务中 ,查出来才能删,会输出两条sql语句-->
+		User user = (User) session.get(User.class, 2);
+		session.delete(user);
+		session.getTransaction().commit();
+
+
+
+<!-- 修改 -->
+
+		Session session = HibernateUtil.getSession();
+		session.beginTransaction();
+		<!-- 要放在事务中 查出来才能修改-->
+		User user = (User) session.get(User.class, 1);
+		<!-- 只有当set的值跟以前不一样才回去执行update修改 -->
+		user.setUsername("jack");
+		session.getTransaction().commit();
+
+
+<!-- 查询所有 -->
+		Session session = HibernateUtil.getSession();
+		String hql = "from User";<!-- User是类名,不是表名,要切记 -->
+		Query query = session.createQuery(hql);
+		List<User> userList = query.list();
+		for(User user : userList) {
+			System.out.println(user.getUsername() + " : " + user.getPassword());
+		}
+		
+		
+		
+		
+		
+		
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+</body>
+</html>
